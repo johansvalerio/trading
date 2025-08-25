@@ -317,6 +317,34 @@ def get_data():
         else:
             position_size = 0.0
         
+        # Calculate signal score based on technical indicators
+        score = 0.0
+        if current_rsi:
+            if current_rsi < 30:
+                score += 0.3  # Oversold for buy
+            elif current_rsi > 70:
+                score -= 0.3  # Overbought for sell
+        
+        if current_macd and current_macd_signal:
+            if current_macd > current_macd_signal:
+                score += 0.2  # MACD bullish
+            else:
+                score -= 0.2  # MACD bearish
+        
+        if last_candle['sma_20'] and last_candle['sma_50']:
+            if last_candle['sma_20'] > last_candle['sma_50']:
+                score += 0.2  # Golden cross
+            else:
+                score -= 0.2  # Death cross
+        
+        if current_adx and current_adx > 25:
+            score += 0.1  # Strong trend
+        
+        if ai_prediction == 1:
+            score += 0.2  # AI bullish
+        elif ai_prediction == 0:
+            score -= 0.2  # AI bearish
+
         # Prepare response
         response_data = {
             'indicators': {
@@ -345,6 +373,8 @@ def get_data():
                     'current_volume': float(last_candle.get('volume', 0)),
                     'average_volume': float(last_candle.get('volume_ma', 0))
                 },
+                'volume_ratio': float(last_candle.get('volume_ratio', 1.0)),
+                'score': float(score),
                 'adx': float(current_adx),
                 'rsi': float(current_rsi),
                 'macd': float(current_macd),
@@ -358,6 +388,7 @@ def get_data():
                 'max_daily_trades': MAX_DAILY_TRADES
             },
             'market_context': market_context,
+           
             'news_analysis': {
                 'overall_sentiment': news_analysis['overall_sentiment'],
                 'crisis_alerts': len(news_analysis['crisis_alerts']),

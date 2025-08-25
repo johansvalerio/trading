@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="static/css/styles.css">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="static/js/app.js"></script>
 </head>
 
 <body>
@@ -218,7 +219,7 @@
                     </div>
                 </div>
                 <!-- Configuración -->
-                <div class="card">
+                <!-- <div class="card">
                     <div class="card-header">
                         <i class="fas fa-cog me-2"></i>Configuración
                     </div>
@@ -251,7 +252,7 @@
                             <i class="fas fa-check-circle me-2"></i>Aplicar Configuración
                         </button>
                     </div>
-                </div>
+                </div> -->
                 <!-- Fin Configuración -->
             </div>
 
@@ -263,9 +264,10 @@
             </div>
 
             <!-- Indicadores -->
-            <div class="row g-4">
+            <div class="row g-4 w-100">
+
                 <!-- MACD Card -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-3">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
@@ -299,7 +301,7 @@
                     </div>
 
                     <!-- ADX Card with Progress -->
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -332,7 +334,7 @@
                     </div>
 
                     <!-- ATR Card with Progress -->
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -365,7 +367,7 @@
                     </div>
 
                     <!-- AI Prediction Card -->
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -395,7 +397,7 @@
                     </div>
 
                     <!-- Risk Management Card -->
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -423,7 +425,7 @@
                     </div>
 
                     <!-- Volume Analysis Card -->
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -448,8 +450,10 @@
                                 </div>
                             </div>
                         </div>
-                    </div> <!-- Market Status Card -->
-                    <div class="col-md-6 col-lg-4">
+                    </div>
+
+                    <!-- Market Status Card -->
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -468,7 +472,7 @@
                     </div>
 
                     <!-- RSI Card -->
-                    <div class="col-md-6 col-lg-4">
+                    <div class="col-md-6 col-lg-3">
                         <div class="card h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex align-items-center mb-3">
@@ -532,7 +536,6 @@
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-        <script src="static/js/app.js"></script>
-</body>
+    </body>
 
 </html>

@@ -109,6 +109,7 @@ async function updateData() {
 
         console.log('Datos recibidos:', data);
 
+
         // Actualizar el gráfico si hay datos
         if (data.graph && data.graph.data && data.graph.data.length > 0) {
             console.log('Actualizando gráfico con datos:', data.graph);
@@ -237,11 +238,11 @@ async function updateData() {
                     id: `${type}-rsi-condition`,
                     valueId: `${type}-rsi-value`,
                     check: () => {
-                        const rsiValue = data.rsi ? parseFloat(data.rsi) : null;
-                        const condition = rsiValue !== null && (type === 'buy' ? rsiValue < 30 : rsiValue > 70);
+                        const rsiValue = indicators.rsi !== null && indicators.rsi !== undefined ? parseFloat(indicators.rsi) : 0;
+                        const condition = !isNaN(rsiValue) && (type === 'buy' ? rsiValue < 30 : rsiValue > 70);
                         return {
                             met: condition,
-                            value: rsiValue !== null ? rsiValue.toFixed(2) : '--',
+                            value: !isNaN(rsiValue) ? rsiValue.toFixed(2) : '--',
                             threshold: type === 'buy' ? '< 30' : '> 70'
                         };
                     }
@@ -250,13 +251,13 @@ async function updateData() {
                     id: `${type}-macd-condition`,
                     valueId: `${type}-macd-value`,
                     check: () => {
-                        const macd = data.macd ? parseFloat(data.macd) : null;
-                        const macdSignal = data.macd_signal ? parseFloat(data.macd_signal) : null;
-                        const condition = macd !== null && macdSignal !== null &&
+                        const macd = indicators.macd !== null && indicators.macd !== undefined ? parseFloat(indicators.macd) : 0;
+                        const macdSignal = indicators.macd_signal !== null && indicators.macd_signal !== undefined ? parseFloat(indicators.macd_signal) : 0;
+                        const condition = !isNaN(macd) && !isNaN(macdSignal) &&
                             (type === 'buy' ? macd > macdSignal : macd < macdSignal);
                         return {
                             met: condition,
-                            value: `${macd !== null ? macd.toFixed(6) : '--'} | ${macdSignal !== null ? macdSignal.toFixed(6) : '--'}`,
+                            value: `${!isNaN(macd) ? macd.toFixed(6) : '--'} | ${!isNaN(macdSignal) ? macdSignal.toFixed(6) : '--'}`,
                             threshold: type === 'buy' ? 'MACD > Señal' : 'MACD < Señal'
                         };
                     }
@@ -265,13 +266,13 @@ async function updateData() {
                     id: `${type}-sma-condition`,
                     valueId: `${type}-sma-value`,
                     check: () => {
-                        const sma20 = data.sma_20 ? parseFloat(data.sma_20) : null;
-                        const sma50 = data.sma_50 ? parseFloat(data.sma_50) : null;
-                        const condition = sma20 !== null && sma50 !== null &&
+                        const sma20 = indicators.sma_20 !== null && indicators.sma_20 !== undefined ? parseFloat(indicators.sma_20) : 0;
+                        const sma50 = indicators.sma_50 !== null && indicators.sma_50 !== undefined ? parseFloat(indicators.sma_50) : 0;
+                        const condition = !isNaN(sma20) && !isNaN(sma50) &&
                             (type === 'buy' ? sma20 > sma50 : sma20 < sma50);
                         return {
                             met: condition,
-                            value: `${sma20 !== null ? sma20.toFixed(2) : '--'} | ${sma50 !== null ? sma50.toFixed(2) : '--'}`,
+                            value: `${!isNaN(sma20) ? sma20.toFixed(2) : '--'} | ${!isNaN(sma50) ? sma50.toFixed(2) : '--'}`,
                             threshold: type === 'buy' ? 'SMA20 > SMA50' : 'SMA20 < SMA50'
                         };
                     }
@@ -280,11 +281,11 @@ async function updateData() {
                     id: `${type}-adx-condition`,
                     valueId: `${type}-adx-value`,
                     check: () => {
-                        const adx = data.adx ? parseFloat(data.adx) : null;
-                        const condition = adx !== null && adx > 25;
+                        const adx = indicators.adx !== null && indicators.adx !== undefined ? parseFloat(indicators.adx) : 0;
+                        const condition = !isNaN(adx) && adx > 25;
                         return {
                             met: condition,
-                            value: adx !== null ? adx.toFixed(2) : '--',
+                            value: !isNaN(adx) ? adx.toFixed(2) : '--',
                             threshold: '> 25'
                         };
                     }
@@ -293,11 +294,11 @@ async function updateData() {
                     id: `${type}-volume-condition`,
                     valueId: `${type}-volume-value`,
                     check: () => {
-                        const volumeRatio = data.volume_ratio ? parseFloat(data.volume_ratio) : null;
-                        const condition = volumeRatio !== null && volumeRatio > 1;
+                        const volumeRatio = indicators.volume_ratio !== null && indicators.volume_ratio !== undefined ? parseFloat(indicators.volume_ratio) : 0;
+                        const condition = !isNaN(volumeRatio) && volumeRatio > 1;
                         return {
                             met: condition,
-                            value: volumeRatio !== null ? volumeRatio.toFixed(2) : '--',
+                            value: !isNaN(volumeRatio) ? volumeRatio.toFixed(2) : '--',
                             threshold: '> 1'
                         };
                     }
@@ -306,12 +307,12 @@ async function updateData() {
                     id: `${type}-score-condition`,
                     valueId: `${type}-score-value`,
                     check: () => {
-                        const score = data.score ? parseFloat(data.score) : null;
+                        const score = indicators.score !== null && indicators.score !== undefined ? parseFloat(indicators.score) : 0;
                         const threshold = type === 'buy' ? 0.6 : -0.6;
-                        const condition = score !== null && (type === 'buy' ? score > threshold : score < threshold);
+                        const condition = !isNaN(score) && (type === 'buy' ? score > threshold : score < threshold);
                         return {
                             met: condition,
-                            value: score !== null ? score.toFixed(2) : '--',
+                            value: !isNaN(score) ? score.toFixed(2) : '--',
                             threshold: type === 'buy' ? '> 0.6' : '< -0.6'
                         };
                     }
@@ -410,7 +411,13 @@ async function updateData() {
                 if (aiConfidenceBadge) {
                     const confidence = Math.min(Math.max(prediction.confidence * 100, 0), 100).toFixed(1);
                     aiConfidenceBadge.textContent = `Confianza: ${confidence}%`;
-                    aiConfidenceBadge.className = `badge ${isBullish ? 'bg-success' : 'bg-danger'}`;
+                    aiConfidenceBadge.className = confidence >= 80
+                        ? 'badge bg-success'
+                        : confidence >= 60
+                            ? 'badge bg-info'
+                            : confidence >= 40
+                                ? 'badge bg-warning'
+                                : 'badge bg-danger';
                 }
             }
 
@@ -648,6 +655,8 @@ async function updateData() {
         const rsiValue = data.rsi ? parseFloat(data.rsi) : 0;
         $('#rsi-value').text(rsiValue.toFixed(2));
 
+
+
         // Actualizar barra de progreso RSI
         const rsiBar = $('#rsi-bar');
         rsiBar.css('width', rsiValue + '%');
@@ -791,46 +800,109 @@ async function updateData() {
             if (tradeRiskEl) tradeRiskEl.textContent = '1.00%';
         }
 
-        // Actualizar análisis de volumen - SIEMPRE mostrar datos calculados
+        // Actualizar análisis de volumen - MEJORADO con datos más completos
         if (data.indicators && data.indicators.volume_analysis) {
             const volumeInfo = data.indicators.volume_analysis;
             const volumeRatio = volumeInfo.ratio || 1.0;
             const currentVolume = volumeInfo.current_volume || 0;
             const averageVolume = volumeInfo.average_volume || 0;
+            const volumeChange24h = volumeInfo.volume_change_24h || 0;
+            const volumeTrend = volumeInfo.volume_trend || 'neutral';
+            const volumePercentile = volumeInfo.volume_percentile || 50;
+            const volumeMomentum = volumeInfo.volume_momentum || 0;
+            const volumeVolatility = volumeInfo.volume_volatility || 0;
 
-            // Actualizar barra de volumen siempre
-            const ratioPercentage = Math.min(volumeRatio * 50, 100); // Normalizar para visualización
+            // Actualizar barra de volumen con percentil
             const volumeBar = document.getElementById('volume-ratio-bar');
             if (volumeBar) {
-                volumeBar.style.width = `${ratioPercentage}%`;
+                volumeBar.style.width = `${Math.min(volumePercentile, 100)}%`;
 
-                // Actualizar color según el ratio
+                // Actualizar color según el percentil y tendencia
                 volumeBar.className = 'progress-bar';
-                if (volumeRatio > 2.0) {
+                if (volumePercentile > 80) {
                     volumeBar.classList.add('bg-danger');
-                } else if (volumeRatio > 1.5) {
+                } else if (volumePercentile > 60) {
                     volumeBar.classList.add('bg-warning');
+                } else if (volumePercentile < 20) {
+                    volumeBar.classList.add('bg-info');
                 } else {
                     volumeBar.classList.add('bg-success');
                 }
             }
 
-            // Actualizar texto del valor
+            // Actualizar texto del valor con más información
             const volumeValueEl = document.getElementById('volume-ratio-value');
             if (volumeValueEl) {
-                volumeValueEl.textContent = `${volumeRatio.toFixed(2)}x promedio (${formatNumber(currentVolume, 0)} / ${formatNumber(averageVolume, 0)})`;
+                volumeValueEl.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><strong>${volumeRatio.toFixed(2)}x</strong> vs promedio</span>
+                        <span class="badge ${volumeChange24h > 0 ? 'bg-success' : 'bg-danger'}">
+                            ${volumeChange24h > 0 ? '+' : ''}${volumeChange24h.toFixed(1)}%
+                        </span>
+                    </div>
+                    <div class="text-muted small">
+                        ${formatNumber(currentVolume, 0)} actual / ${formatNumber(averageVolume, 0)} promedio
+                    </div>
+                `;
             }
 
-            // Manejar alerta de volumen
+            // Crear o actualizar información detallada de volumen
+            let volumeDetails = document.getElementById('volume-details');
+            if (!volumeDetails) {
+                // Agregar información detallada al card de volumen
+                const volumeCard = document.querySelector('#volume-ratio-bar').closest('.card-body');
+                if (volumeCard) {
+                    volumeDetails = document.createElement('div');
+                    volumeDetails.id = 'volume-details';
+                    volumeDetails.className = 'mt-3';
+                    volumeCard.appendChild(volumeDetails);
+                }
+            }
+
+            if (volumeDetails) {
+                volumeDetails.innerHTML = `
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <small class="text-muted">Momento:</small>
+                            <div class="fw-bold ${volumeMomentum > 0 ? 'text-success' : 'text-danger'}">
+                                ${volumeMomentum > 0 ? '+' : ''}${volumeMomentum.toFixed(1)}%
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Volatilidad:</small>
+                            <div class="fw-bold ${volumeVolatility > 0.5 ? 'text-warning' : 'text-info'}">
+                                ${(volumeVolatility * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Percentil:</small>
+                            <div class="fw-bold">${volumePercentile.toFixed(0)}% (percentil ${volumePercentile > 80 ? 'alto' : volumePercentile < 20 ? 'bajo' : 'normal'})</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Manejar alerta de volumen mejorada
             const volumeAlert = document.getElementById('volume-alert');
             if (volumeAlert) {
-                if (volumeInfo.alert || volumeRatio > 2.0) {
+                let alertMessage = '';
+                let alertClass = 'alert-info';
+
+                if (volumePercentile > 90) {
+                    alertMessage = `<i class="fas fa-fire me-2"></i><strong>Volumen extremadamente alto:</strong> ${volumeRatio.toFixed(1)}x promedio (${volumePercentile.toFixed(0)}% percentil)`;
+                    alertClass = 'alert-danger';
+                } else if (volumePercentile > 75) {
+                    alertMessage = `<i class="fas fa-arrow-up me-2"></i><strong>Volumen elevado:</strong> ${volumeRatio.toFixed(1)}x promedio (${volumeChange24h.toFixed(1)}% cambio)`;
+                    alertClass = 'alert-warning';
+                } else if (volumePercentile < 10) {
+                    alertMessage = `<i class="fas fa-arrow-down me-2"></i><strong>Volumen muy bajo:</strong> ${volumeRatio.toFixed(1)}x promedio (${volumeChange24h.toFixed(1)}% cambio)`;
+                    alertClass = 'alert-info';
+                }
+
+                if (alertMessage) {
                     volumeAlert.style.display = 'block';
-                    volumeAlert.innerHTML = `
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Volumen anormal: ${volumeRatio.toFixed(1)}x el promedio (${formatNumber(currentVolume, 0)} vs ${formatNumber(averageVolume, 0)})
-                            `;
-                    volumeAlert.className = `alert p-2 mb-0 ${volumeRatio > 3 ? 'alert-danger' : 'alert-warning'}`;
+                    volumeAlert.innerHTML = alertMessage;
+                    volumeAlert.className = `alert p-2 mb-0 ${alertClass}`;
                 } else {
                     volumeAlert.style.display = 'none';
                 }
@@ -847,22 +919,130 @@ async function updateData() {
             }
             if (volumeValueEl) volumeValueEl.textContent = '1.00x promedio';
             if (volumeAlert) volumeAlert.style.display = 'none';
-        }                    // Actualizar estado de la tendencia
-        const trendStatusEl = document.getElementById('trend-status-value');
-        if (trendStatusEl) trendStatusEl.textContent = data.trend_status || 'Indeterminado';
+        }        // Actualizar estado del mercado - MEJORADO con datos completos
+        if (data.market_status) {
+            const marketStatus = data.market_status;
 
-        // Actualizar badges de información adicional
-        const trendBadge = document.getElementById('market-trend-badge');
-        if (trendBadge) {
-            if (data.trend_status === 'Fuerte') {
-                trendBadge.className = 'badge bg-success';
-                trendBadge.textContent = 'Tendencia Fuerte';
-            } else if (data.trend_status === 'Lateral') {
-                trendBadge.className = 'badge bg-warning text-dark';
-                trendBadge.textContent = 'Mercado Lateral';
-            } else {
+            // Actualizar título principal
+            const trendStatusEl = document.getElementById('trend-status-value');
+            if (trendStatusEl) {
+                trendStatusEl.innerHTML = `
+                    <div class="mb-2">${marketStatus.trend_direction || 'Indeterminado'}</div>
+                    <small class="text-muted">${marketStatus.trend_strength || 'Analizando...'}</small>
+                `;
+            }
+
+            // Actualizar badge con más información
+            const trendBadge = document.getElementById('market-trend-badge');
+            if (trendBadge) {
+                let badgeClass = 'badge';
+                let badgeText = 'Cargando...';
+
+                switch (marketStatus.trend_direction) {
+                    case 'Alcista':
+                        badgeClass += ' bg-success';
+                        badgeText = `📈 Alcista (${marketStatus.trend_strength})`;
+                        break;
+                    case 'Bajista':
+                        badgeClass += ' bg-danger';
+                        badgeText = `📉 Bajista (${marketStatus.trend_strength})`;
+                        break;
+                    case 'Lateral':
+                        badgeClass += ' bg-warning text-dark';
+                        badgeText = `➡️ Lateral (${marketStatus.trend_strength})`;
+                        break;
+                    default:
+                        badgeClass += ' bg-secondary';
+                        badgeText = 'Analizando...';
+                }
+
+                trendBadge.className = badgeClass;
+                trendBadge.textContent = badgeText;
+            }
+
+            // Agregar información detallada al card de estado del mercado
+            let marketDetails = document.getElementById('market-details');
+            if (!marketDetails) {
+                const marketCard = document.querySelector('#market-trend-badge').closest('.card-body');
+                if (marketCard) {
+                    marketDetails = document.createElement('div');
+                    marketDetails.id = 'market-details';
+                    marketDetails.className = 'mt-3 text-start';
+                    marketCard.appendChild(marketDetails);
+                }
+            }
+
+            if (marketDetails && marketStatus) {
+                const momentum = marketStatus.momentum || {};
+                const supportResistance = marketStatus.support_resistance || {};
+
+                marketDetails.innerHTML = `
+                    <div class="row g-2 small">
+                        <div class="col-12">
+                            <div class="alert ${marketStatus.volatility_level === 'alta' ? 'alert-danger' : marketStatus.volatility_level === 'baja' ? 'alert-success' : 'alert-info'} p-2 mb-2">
+                                <i class="fas fa-chart-line me-1"></i>
+                                <strong>Volatilidad:</strong> ${marketStatus.volatility_level?.toUpperCase()} (${marketStatus.volatility_percentile?.toFixed(0)}%)
+                            </div>
+                        </div>
+                        
+                        <div class="col-6">
+                            <small class="text-muted">Fase de mercado:</small>
+                            <div class="fw-bold">${marketStatus.market_phase || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="col-6">
+                            <small class="text-muted">Duración tendencia:</small>
+                            <div class="fw-bold">${marketStatus.trend_duration || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <small class="text-muted">Posición del precio:</small>
+                            <div class="fw-bold ${marketStatus.price_position === 'alta' ? 'text-danger' : marketStatus.price_position === 'baja' ? 'text-success' : 'text-warning'}">
+                                ${marketStatus.price_position?.toUpperCase()} (${marketStatus.price_percentile?.toFixed(0)}% percentil)
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <hr class="my-2">
+                            <small class="text-muted">Soporte/Resistencia:</small>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-success">Soporte: ${supportResistance.nearest_support?.toFixed(2)}</span>
+                                <span class="text-danger">Resistencia: ${supportResistance.nearest_resistance?.toFixed(2)}</span>
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                                <div class="progress-bar bg-warning" style="width: ${supportResistance.distance_to_support?.toFixed(0)}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <small class="text-muted">Momentum:</small>
+                            <div class="d-flex justify-content-between">
+                                <span class="badge ${momentum.short_term > 0 ? 'bg-success' : 'bg-danger'}">5d: ${momentum.short_term?.toFixed(1)}%</span>
+                                <span class="badge ${momentum.medium_term > 0 ? 'bg-success' : 'bg-danger'}">20d: ${momentum.medium_term?.toFixed(1)}%</span>
+                                <span class="badge ${momentum.long_term > 0 ? 'bg-success' : 'bg-danger'}">50d: ${momentum.long_term?.toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        
+                        ${marketStatus.crisis_level > 0 ? `
+                        <div class="col-12">
+                            <div class="alert alert-danger p-2 mb-0">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <strong>Crisis detectada:</strong> ${marketStatus.crisis_level} alertas activas
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        } else {
+            // Fallback a datos básicos si no hay market_status
+            const trendStatusEl = document.getElementById('trend-status-value');
+            const trendBadge = document.getElementById('market-trend-badge');
+
+            if (trendStatusEl) trendStatusEl.textContent = data.trend_status || 'Indeterminado';
+            if (trendBadge) {
                 trendBadge.className = 'badge bg-secondary';
-                trendBadge.textContent = 'Indeterminado';
+                trendBadge.textContent = 'Cargando...';
             }
         }
 
