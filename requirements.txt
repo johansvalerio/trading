@@ -1,0 +1,16 @@
+pandas==2.0.3
+numpy==1.24.3
+pandas-ta==0.3.14b0
+python-dotenv==1.0.0
+ccxt==4.0.7
+flask==2.3.2
+python-dateutil==2.8.2
+scikit-learn==1.2.2
+plotly==5.15.0
+dash==2.11.1
+dash-bootstrap-components==1.4.1
+requests==2.31.0
+ta==0.10.2
+yfinance==0.2.18
+textblob==0.17.1
+scipy==1.11.1
