@@ -48,6 +48,11 @@ def get_data():
         df = add_technical_indicators(df)
         if df is None or df.empty:
             return jsonify({'error': 'Error processing indicators'}), 500
+            
+        # Asegurarse de que tenemos la columna volume_ratio
+        if 'volume_ma' not in df.columns:
+            df['volume_ma'] = df['volume'].rolling(window=20).mean()
+        df['volume_ratio'] = df['volume'] / df['volume_ma']
         
         # Get news sentiment analysis
         news_analysis = news_analyzer.get_market_context(df, SYMBOL)
@@ -371,7 +376,9 @@ def get_data():
                     'ratio': float(last_candle.get('volume_ratio', 1.0)),
                     'alert': False,
                     'current_volume': float(last_candle.get('volume', 0)),
-                    'average_volume': float(last_candle.get('volume_ma', 0))
+                    'average_volume': float(last_candle.get('volume_ma', 0)),
+                    'percentile': float(np.mean(df['volume_ratio'].iloc[-50:] <= last_candle.get('volume_ratio', 1.0))),
+                    'momentum': float((last_candle.get('volume_ratio', 1.0) / df['volume_ratio'].iloc[-2] - 1) * 100) if len(df) > 1 else 0.0
                 },
                 'volume_ratio': float(last_candle.get('volume_ratio', 1.0)),
                 'score': float(score),
@@ -388,7 +395,6 @@ def get_data():
                 'max_daily_trades': MAX_DAILY_TRADES
             },
             'market_context': market_context,
-           
             'news_analysis': {
                 'overall_sentiment': news_analysis['overall_sentiment'],
                 'crisis_alerts': len(news_analysis['crisis_alerts']),

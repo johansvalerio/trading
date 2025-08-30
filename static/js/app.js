@@ -801,134 +801,151 @@ async function updateData() {
         }
 
         // Actualizar análisis de volumen - MEJORADO con datos más completos
-        if (data.indicators && data.indicators.volume_analysis) {
-            const volumeInfo = data.indicators.volume_analysis;
-            const volumeRatio = volumeInfo.ratio || 1.0;
-            const currentVolume = volumeInfo.current_volume || 0;
-            const averageVolume = volumeInfo.average_volume || 0;
-            const volumeChange24h = volumeInfo.volume_change_24h || 0;
-            const volumeTrend = volumeInfo.volume_trend || 'neutral';
-            const volumePercentile = volumeInfo.volume_percentile || 50;
-            const volumeMomentum = volumeInfo.volume_momentum || 0;
-            const volumeVolatility = volumeInfo.volume_volatility || 0;
-
-            // Actualizar barra de volumen con percentil
+        try {
+            const volumeInfo = data.indicators.volume_analysis || {};
+            console.log('Datos de volumen recibidos:', volumeInfo); // Depuración
+            
+            // Asegurarse de que los valores numéricos sean válidos
+            const volumeRatio = !isNaN(parseFloat(volumeInfo.ratio)) ? parseFloat(volumeInfo.ratio) : 1.0;
+            const currentVolume = !isNaN(parseFloat(volumeInfo.current_volume)) ? parseFloat(volumeInfo.current_volume) : 0;
+            const averageVolume = !isNaN(parseFloat(volumeInfo.average_volume)) ? parseFloat(volumeInfo.average_volume) : 0;
+            const volumePercentile = !isNaN(parseFloat(volumeInfo.percentile)) ? parseFloat(volumeInfo.percentile) : 0;
+            const volumeMomentum = !isNaN(parseFloat(volumeInfo.momentum)) ? parseFloat(volumeInfo.momentum) : 0;
+            
+            console.log('Datos de volumen procesados:', { 
+                ratio: volumeRatio, 
+                currentVolume, 
+                averageVolume, 
+                percentile: volumePercentile, 
+                momentum: volumeMomentum 
+            });
+            
+            // Actualizar valores de volumen
+            const currentVolumeEl = document.getElementById('current-volume');
+            const averageVolumeEl = document.getElementById('average-volume');
+            if (currentVolumeEl) currentVolumeEl.textContent = formatNumber(currentVolume, 4);
+            if (averageVolumeEl) averageVolumeEl.textContent = formatNumber(averageVolume, 4);
+            
+            // Calcular porcentaje del ratio
+            const volumePercent = Math.min(Math.max(volumeRatio * 50, 5), 100);
+            
+            // Actualizar barra de volumen
             const volumeBar = document.getElementById('volume-ratio-bar');
             if (volumeBar) {
-                volumeBar.style.width = `${Math.min(volumePercentile, 100)}%`;
-
-                // Actualizar color según el percentil y tendencia
-                volumeBar.className = 'progress-bar';
-                if (volumePercentile > 80) {
-                    volumeBar.classList.add('bg-danger');
-                } else if (volumePercentile > 60) {
-                    volumeBar.classList.add('bg-warning');
-                } else if (volumePercentile < 20) {
-                    volumeBar.classList.add('bg-info');
+                volumeBar.style.width = `${volumePercent}%`;
+                
+                // Cambiar color según el valor
+                if (volumeRatio > 2.0) {
+                    volumeBar.className = 'progress-bar bg-danger';
+                } else if (volumeRatio > 1.5) {
+                    volumeBar.className = 'progress-bar bg-warning';
+                } else if (volumeRatio > 1.0) {
+                    volumeBar.className = 'progress-bar bg-success';
                 } else {
-                    volumeBar.classList.add('bg-success');
+                    volumeBar.className = 'progress-bar bg-secondary';
                 }
             }
-
-            // Actualizar texto del valor con más información
+            
+            // Actualizar texto del ratio con percentil y momento
             const volumeValueEl = document.getElementById('volume-ratio-value');
+            const volumePercentileEl = document.getElementById('volume-percentile');
+            const volumeMomentumEl = document.getElementById('volume-momentum');
+            
             if (volumeValueEl) {
-                volumeValueEl.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span><strong>${volumeRatio.toFixed(2)}x</strong> vs promedio</span>
-                        <span class="badge ${volumeChange24h > 0 ? 'bg-success' : 'bg-danger'}">
-                            ${volumeChange24h > 0 ? '+' : ''}${volumeChange24h.toFixed(1)}%
-                        </span>
-                    </div>
-                    <div class="text-muted small">
-                        ${formatNumber(currentVolume, 0)} actual / ${formatNumber(averageVolume, 0)} promedio
-                    </div>
-                `;
+                volumeValueEl.textContent = `${volumeRatio.toFixed(2)}x`;
             }
-
-            // Crear o actualizar información detallada de volumen
-            let volumeDetails = document.getElementById('volume-details');
-            if (!volumeDetails) {
-                // Agregar información detallada al card de volumen
-                const volumeCard = document.querySelector('#volume-ratio-bar').closest('.card-body');
-                if (volumeCard) {
-                    volumeDetails = document.createElement('div');
-                    volumeDetails.id = 'volume-details';
-                    volumeDetails.className = 'mt-3';
-                    volumeCard.appendChild(volumeDetails);
-                }
-            }
-
-            if (volumeDetails) {
-                volumeDetails.innerHTML = `
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <small class="text-muted">Momento:</small>
-                            <div class="fw-bold ${volumeMomentum > 0 ? 'text-success' : 'text-danger'}">
-                                ${volumeMomentum > 0 ? '+' : ''}${volumeMomentum.toFixed(1)}%
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">Volatilidad:</small>
-                            <div class="fw-bold ${volumeVolatility > 0.5 ? 'text-warning' : 'text-info'}">
-                                ${(volumeVolatility * 100).toFixed(1)}%
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <small class="text-muted">Percentil:</small>
-                            <div class="fw-bold">${volumePercentile.toFixed(0)}% (percentil ${volumePercentile > 80 ? 'alto' : volumePercentile < 20 ? 'bajo' : 'normal'})</div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Manejar alerta de volumen mejorada
-            const volumeAlert = document.getElementById('volume-alert');
-            if (volumeAlert) {
-                let alertMessage = '';
-                let alertClass = 'alert-info';
-
-                if (volumePercentile > 90) {
-                    alertMessage = `<i class="fas fa-fire me-2"></i><strong>Volumen extremadamente alto:</strong> ${volumeRatio.toFixed(1)}x promedio (${volumePercentile.toFixed(0)}% percentil)`;
-                    alertClass = 'alert-danger';
-                } else if (volumePercentile > 75) {
-                    alertMessage = `<i class="fas fa-arrow-up me-2"></i><strong>Volumen elevado:</strong> ${volumeRatio.toFixed(1)}x promedio (${volumeChange24h.toFixed(1)}% cambio)`;
-                    alertClass = 'alert-warning';
-                } else if (volumePercentile < 10) {
-                    alertMessage = `<i class="fas fa-arrow-down me-2"></i><strong>Volumen muy bajo:</strong> ${volumeRatio.toFixed(1)}x promedio (${volumeChange24h.toFixed(1)}% cambio)`;
-                    alertClass = 'alert-info';
-                }
-
-                if (alertMessage) {
-                    volumeAlert.style.display = 'block';
-                    volumeAlert.innerHTML = alertMessage;
-                    volumeAlert.className = `alert p-2 mb-0 ${alertClass}`;
+            
+            // Mostrar percentil (ya calculado en el backend)
+            if (volumePercentileEl) {
+                const percentileValue = volumePercentile * 100; // Convertir a porcentaje
+                volumePercentileEl.textContent = `Percentil: ${percentileValue.toFixed(1)}%`;
+                
+                // Color según el percentil
+                if (percentileValue > 90) {
+                    volumePercentileEl.className = 'small text-danger fw-bold';
+                } else if (percentileValue > 70) {
+                    volumePercentileEl.className = 'small text-warning';
                 } else {
-                    volumeAlert.style.display = 'none';
+                    volumePercentileEl.className = 'small text-muted';
                 }
             }
-        } else {
-            // Mostrar valores por defecto si no hay datos
+            
+            // Mostrar momento (tendencia del volumen)
+            if (volumeMomentumEl) {
+                const trendIcon = volumeMomentum > 0 ? '↑' : volumeMomentum < 0 ? '↓' : '→';
+                const trendClass = volumeMomentum > 0 ? 'text-success' : volumeMomentum < 0 ? 'text-danger' : 'text-muted';
+                volumeMomentumEl.innerHTML = `Tendencia: <span class="${trendClass}">${trendIcon} ${Math.abs(volumeMomentum).toFixed(2)}%</span>`;
+            }
+            
+            // Actualizar alerta de volumen
+            const volumeAlert = document.getElementById('volume-alert');
+            const volumeAlertText = document.getElementById('volume-alert-text');
+            const volumeTrend = document.getElementById('volume-trend');
+            
+            if (volumeRatio > 2.0) {
+                if (volumeAlert) {
+                    volumeAlert.className = 'alert alert-danger';
+                    volumeAlert.style.display = 'block';
+                }
+                if (volumeAlertText) volumeAlertText.textContent = '¡Volumen muy alto! Podría indicar movimiento fuerte.';
+                if (volumeTrend) volumeTrend.textContent = 'Volumen significativamente por encima del promedio';
+            } else if (volumeRatio > 1.5) {
+                if (volumeAlert) {
+                    volumeAlert.className = 'alert alert-warning';
+                    volumeAlert.style.display = 'block';
+                }
+                if (volumeAlertText) volumeAlertText.textContent = 'Volumen alto detectado';
+                if (volumeTrend) volumeTrend.textContent = 'Volumen por encima del promedio';
+            } else if (volumeRatio > 1.0) {
+                if (volumeAlert) volumeAlert.style.display = 'none';
+                if (volumeTrend) volumeTrend.textContent = 'Volumen ligeramente por encima del promedio';
+            } else if (volumeRatio > 0.8) {
+                if (volumeAlert) volumeAlert.style.display = 'none';
+                if (volumeTrend) volumeTrend.textContent = 'Volumen dentro del rango normal';
+            } else {
+                if (volumeAlert) {
+                    volumeAlert.className = 'alert alert-info';
+                    volumeAlert.style.display = 'block';
+                }
+                if (volumeAlertText) volumeAlertText.textContent = 'Volumen por debajo del promedio';
+                if (volumeTrend) volumeTrend.textContent = 'Bajo volumen de operaciones';
+            }
+        } catch (error) {
+            console.error('Error al actualizar datos de volumen:', error);
+            
+            // Mostrar valores por defecto en caso de error
             const volumeBar = document.getElementById('volume-ratio-bar');
             const volumeValueEl = document.getElementById('volume-ratio-value');
             const volumeAlert = document.getElementById('volume-alert');
+            const currentVolumeEl = document.getElementById('current-volume');
+            const averageVolumeEl = document.getElementById('average-volume');
+            const volumeTrend = document.getElementById('volume-trend');
 
             if (volumeBar) {
                 volumeBar.style.width = '50%';
-                volumeBar.className = 'progress-bar bg-success';
+                volumeBar.className = 'progress-bar bg-secondary';
             }
-            if (volumeValueEl) volumeValueEl.textContent = '1.00x promedio';
+            if (volumeValueEl) volumeValueEl.textContent = '1.00x';
+            if (currentVolumeEl) currentVolumeEl.textContent = '0.0000';
+            if (averageVolumeEl) averageVolumeEl.textContent = '0.0000';
+            if (volumeTrend) volumeTrend.textContent = 'Error al cargar datos de volumen';
             if (volumeAlert) volumeAlert.style.display = 'none';
-        }        // Actualizar estado del mercado - MEJORADO con datos completos
-        if (data.market_status) {
-            const marketStatus = data.market_status;
+        }
 
-            // Actualizar título principal
+    // Actualizar contexto de mercado
+    if (data.market_context) {
+            const market = data.market_context;
+            const trend = market.trend || {};
+            const sideways = market.sideways || {};
+            const volatility = market.volatility || {};
+            const crisis = market.crisis || {};
+
+            // Actualizar título principal con información de tendencia
             const trendStatusEl = document.getElementById('trend-status-value');
             if (trendStatusEl) {
                 trendStatusEl.innerHTML = `
-                    <div class="mb-2">${marketStatus.trend_direction || 'Indeterminado'}</div>
-                    <small class="text-muted">${marketStatus.trend_strength || 'Analizando...'}</small>
+                    <div class="mb-2">${trend.direction || 'Indeterminado'}</div>
+                    <small class="text-muted">Fuerza: ${trend.strength || 'N/A'}</small>
                 `;
             }
 
@@ -936,24 +953,25 @@ async function updateData() {
             const trendBadge = document.getElementById('market-trend-badge');
             if (trendBadge) {
                 let badgeClass = 'badge';
-                let badgeText = 'Cargando...';
+                let badgeText = 'Analizando...';
+                const trendDirection = trend.direction || 'Indeterminado';
+                const trendStrength = trend.strength || 'N/A';
 
-                switch (marketStatus.trend_direction) {
-                    case 'Alcista':
+                switch (trendDirection.toLowerCase()) {
+                    case 'alcista':
                         badgeClass += ' bg-success';
-                        badgeText = `📈 Alcista (${marketStatus.trend_strength})`;
+                        badgeText = `📈 ${trendDirection} (${trendStrength})`;
                         break;
-                    case 'Bajista':
+                    case 'bajista':
                         badgeClass += ' bg-danger';
-                        badgeText = `📉 Bajista (${marketStatus.trend_strength})`;
+                        badgeText = `📉 ${trendDirection} (${trendStrength})`;
                         break;
-                    case 'Lateral':
+                    case 'lateral':
                         badgeClass += ' bg-warning text-dark';
-                        badgeText = `➡️ Lateral (${marketStatus.trend_strength})`;
+                        badgeText = `➡️ ${trendDirection} (${trendStrength})`;
                         break;
                     default:
                         badgeClass += ' bg-secondary';
-                        badgeText = 'Analizando...';
                 }
 
                 trendBadge.className = badgeClass;
@@ -972,62 +990,57 @@ async function updateData() {
                 }
             }
 
-            if (marketDetails && marketStatus) {
-                const momentum = marketStatus.momentum || {};
-                const supportResistance = marketStatus.support_resistance || {};
+            if (marketDetails) {
+                const volatilityLevel = volatility.volatility_ratio > 2 ? 'Alta' : volatility.volatility_ratio > 1 ? 'Media' : 'Baja';
+                const volatilityClass = volatility.volatility_ratio > 2 ? 'alert-danger' : 
+                                     volatility.volatility_ratio > 1 ? 'alert-warning' : 'alert-success';
 
                 marketDetails.innerHTML = `
                     <div class="row g-2 small">
                         <div class="col-12">
-                            <div class="alert ${marketStatus.volatility_level === 'alta' ? 'alert-danger' : marketStatus.volatility_level === 'baja' ? 'alert-success' : 'alert-info'} p-2 mb-2">
+                            <div class="alert ${volatilityClass} p-2 mb-2">
                                 <i class="fas fa-chart-line me-1"></i>
-                                <strong>Volatilidad:</strong> ${marketStatus.volatility_level?.toUpperCase()} (${marketStatus.volatility_percentile?.toFixed(0)}%)
+                                <strong>Volatilidad:</strong> ${volatilityLevel} (Ratio: ${volatility.volatility_ratio?.toFixed(2)}x)
                             </div>
                         </div>
                         
                         <div class="col-6">
-                            <small class="text-muted">Fase de mercado:</small>
-                            <div class="fw-bold">${marketStatus.market_phase || 'N/A'}</div>
+                            <small class="text-muted">ADX:</small>
+                            <div class="fw-bold">${trend.adx?.toFixed(2) || 'N/A'}</div>
                         </div>
                         
                         <div class="col-6">
-                            <small class="text-muted">Duración tendencia:</small>
-                            <div class="fw-bold">${marketStatus.trend_duration || 'N/A'}</div>
+                            <small class="text-muted">Mercado Lateral:</small>
+                            <div class="fw-bold">${sideways.is_sideways ? 'Sí' : 'No'}</div>
                         </div>
                         
                         <div class="col-12">
-                            <small class="text-muted">Posición del precio:</small>
-                            <div class="fw-bold ${marketStatus.price_position === 'alta' ? 'text-danger' : marketStatus.price_position === 'baja' ? 'text-success' : 'text-warning'}">
-                                ${marketStatus.price_position?.toUpperCase()} (${marketStatus.price_percentile?.toFixed(0)}% percentil)
+                            <small class="text-muted">Estado del Mercado:</small>
+                            <div class="fw-bold ${market.can_trade ? 'text-success' : 'text-danger'}">
+                                ${market.can_trade ? 'Óptimo para trading' : 'Trading no recomendado'}
                             </div>
                         </div>
                         
+                        ${market.blocked_reasons && market.blocked_reasons.length > 0 ? `
                         <div class="col-12">
                             <hr class="my-2">
-                            <small class="text-muted">Soporte/Resistencia:</small>
-                            <div class="d-flex justify-content-between">
-                                <span class="text-success">Soporte: ${supportResistance.nearest_support?.toFixed(2)}</span>
-                                <span class="text-danger">Resistencia: ${supportResistance.nearest_resistance?.toFixed(2)}</span>
-                            </div>
-                            <div class="progress mt-1" style="height: 4px;">
-                                <div class="progress-bar bg-warning" style="width: ${supportResistance.distance_to_support?.toFixed(0)}%"></div>
-                            </div>
+                            <small class="text-muted">Razones de bloqueo:</small>
+                            <ul class="mb-0 mt-1">
+                                ${market.blocked_reasons.map(reason => `<li>${reason}</li>`).join('')}
+                            </ul>
                         </div>
+                        ` : ''}
                         
-                        <div class="col-12">
-                            <small class="text-muted">Momentum:</small>
-                            <div class="d-flex justify-content-between">
-                                <span class="badge ${momentum.short_term > 0 ? 'bg-success' : 'bg-danger'}">5d: ${momentum.short_term?.toFixed(1)}%</span>
-                                <span class="badge ${momentum.medium_term > 0 ? 'bg-success' : 'bg-danger'}">20d: ${momentum.medium_term?.toFixed(1)}%</span>
-                                <span class="badge ${momentum.long_term > 0 ? 'bg-success' : 'bg-danger'}">50d: ${momentum.long_term?.toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        
-                        ${marketStatus.crisis_level > 0 ? `
-                        <div class="col-12">
+                        ${crisis.is_crisis ? `
+                        <div class="col-12 mt-2">
                             <div class="alert alert-danger p-2 mb-0">
                                 <i class="fas fa-exclamation-triangle me-1"></i>
-                                <strong>Crisis detectada:</strong> ${marketStatus.crisis_level} alertas activas
+                                <strong>Crisis detectada:</strong> Confianza ${(crisis.confidence * 100)?.toFixed(1)}%
+                                ${crisis.reasons && crisis.reasons.length ? `
+                                <div class="mt-1">
+                                    <small>Razones: ${crisis.reasons.join(', ')}</small>
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
                         ` : ''}
@@ -1035,7 +1048,7 @@ async function updateData() {
                 `;
             }
         } else {
-            // Fallback a datos básicos si no hay market_status
+            // Fallback a datos básicos si no hay market_context
             const trendStatusEl = document.getElementById('trend-status-value');
             const trendBadge = document.getElementById('market-trend-badge');
 

@@ -436,16 +436,54 @@
                                 </div>
                                 <div class="py-2">
                                     <div class="mb-3">
-                                        <label class="mb-1">Ratio de Volumen</label>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="small">Ratio de Volumen</span>
+                                            <span id="volume-ratio-value" class="small fw-bold">-</span>
+                                        </div>
                                         <div class="progress" style="height: 8px;">
                                             <div id="volume-ratio-bar" class="progress-bar bg-success"
-                                                role="progressbar" style="width: 0%"></div>
+                                                role="progressbar" style="width: 0%">
+                                            </div>
                                         </div>
-                                        <small id="volume-ratio-value" class="text-muted">-</small>
+                                        <small class="text-muted">vs. Promedio (20 periodos)</small>
                                     </div>
-                                    <div class="alert alert-info p-2 mb-0" id="volume-alert" style="display: none;">
+                                    
+                                    <div class="row g-2 small mb-3">
+                                        <div class="col-6">
+                                            <div class="bg-dark bg-opacity-10 p-2 rounded">
+                                                <div class="text-muted">Volumen Actual</div>
+                                                <div id="current-volume" class="fw-bold">-</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="bg-dark bg-opacity-10 p-2 rounded">
+                                                <div class="text-muted">Promedio</div>
+                                                <div id="average-volume" class="fw-bold">-</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row g-2 small mt-2">
+                                        <div class="col-6">
+                                            <div class="p-1">
+                                                <div id="volume-percentile" class="small">Percentil: -</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-1 text-end">
+                                                <div id="volume-momentum" class="small">Tendencia: -</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert" id="volume-alert" style="display: none; padding: 0.5rem;">
                                         <i class="fas fa-exclamation-circle me-2"></i>
-                                        <span>Volumen anormal detectado</span>
+                                        <span id="volume-alert-text">-</span>
+                                    </div>
+                                    
+                                    <div class="mt-2 small text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <span id="volume-trend">Analizando tendencia de volumen...</span>
                                     </div>
                                 </div>
                             </div>
