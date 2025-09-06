@@ -742,4 +742,70 @@
         .value-updated {
             animation: highlightChange 0.8s ease-in-out;
         }
-   
+
+        /* Estilos para el historial de trading */
+        #trading-history .list-group-item {
+            background-color: transparent;
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            padding: 1rem;
+        }
+
+        #trading-history .list-group-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .trade-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trade-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .trade-pair {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .trade-time {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .trade-result {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .trade-profit {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .trade-loss {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .trade-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .trade-status.open {
+            background-color: rgba(25, 135, 84, 0.1);
+            color: #28a745;
+        }
+
+        .trade-status.closed {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }

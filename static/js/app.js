@@ -804,36 +804,36 @@ async function updateData() {
         try {
             const volumeInfo = data.indicators.volume_analysis || {};
             console.log('Datos de volumen recibidos:', volumeInfo); // Depuración
-            
+
             // Asegurarse de que los valores numéricos sean válidos
             const volumeRatio = !isNaN(parseFloat(volumeInfo.ratio)) ? parseFloat(volumeInfo.ratio) : 1.0;
             const currentVolume = !isNaN(parseFloat(volumeInfo.current_volume)) ? parseFloat(volumeInfo.current_volume) : 0;
             const averageVolume = !isNaN(parseFloat(volumeInfo.average_volume)) ? parseFloat(volumeInfo.average_volume) : 0;
             const volumePercentile = !isNaN(parseFloat(volumeInfo.percentile)) ? parseFloat(volumeInfo.percentile) : 0;
             const volumeMomentum = !isNaN(parseFloat(volumeInfo.momentum)) ? parseFloat(volumeInfo.momentum) : 0;
-            
-            console.log('Datos de volumen procesados:', { 
-                ratio: volumeRatio, 
-                currentVolume, 
-                averageVolume, 
-                percentile: volumePercentile, 
-                momentum: volumeMomentum 
+
+            console.log('Datos de volumen procesados:', {
+                ratio: volumeRatio,
+                currentVolume,
+                averageVolume,
+                percentile: volumePercentile,
+                momentum: volumeMomentum
             });
-            
+
             // Actualizar valores de volumen
             const currentVolumeEl = document.getElementById('current-volume');
             const averageVolumeEl = document.getElementById('average-volume');
             if (currentVolumeEl) currentVolumeEl.textContent = formatNumber(currentVolume, 4);
             if (averageVolumeEl) averageVolumeEl.textContent = formatNumber(averageVolume, 4);
-            
+
             // Calcular porcentaje del ratio
             const volumePercent = Math.min(Math.max(volumeRatio * 50, 5), 100);
-            
+
             // Actualizar barra de volumen
             const volumeBar = document.getElementById('volume-ratio-bar');
             if (volumeBar) {
                 volumeBar.style.width = `${volumePercent}%`;
-                
+
                 // Cambiar color según el valor
                 if (volumeRatio > 2.0) {
                     volumeBar.className = 'progress-bar bg-danger';
@@ -845,21 +845,21 @@ async function updateData() {
                     volumeBar.className = 'progress-bar bg-secondary';
                 }
             }
-            
+
             // Actualizar texto del ratio con percentil y momento
             const volumeValueEl = document.getElementById('volume-ratio-value');
             const volumePercentileEl = document.getElementById('volume-percentile');
             const volumeMomentumEl = document.getElementById('volume-momentum');
-            
+
             if (volumeValueEl) {
                 volumeValueEl.textContent = `${volumeRatio.toFixed(2)}x`;
             }
-            
+
             // Mostrar percentil (ya calculado en el backend)
             if (volumePercentileEl) {
                 const percentileValue = volumePercentile * 100; // Convertir a porcentaje
                 volumePercentileEl.textContent = `Percentil: ${percentileValue.toFixed(1)}%`;
-                
+
                 // Color según el percentil
                 if (percentileValue > 90) {
                     volumePercentileEl.className = 'small text-danger fw-bold';
@@ -869,19 +869,19 @@ async function updateData() {
                     volumePercentileEl.className = 'small text-muted';
                 }
             }
-            
+
             // Mostrar momento (tendencia del volumen)
             if (volumeMomentumEl) {
                 const trendIcon = volumeMomentum > 0 ? '↑' : volumeMomentum < 0 ? '↓' : '→';
                 const trendClass = volumeMomentum > 0 ? 'text-success' : volumeMomentum < 0 ? 'text-danger' : 'text-muted';
                 volumeMomentumEl.innerHTML = `Tendencia: <span class="${trendClass}">${trendIcon} ${Math.abs(volumeMomentum).toFixed(2)}%</span>`;
             }
-            
+
             // Actualizar alerta de volumen
             const volumeAlert = document.getElementById('volume-alert');
             const volumeAlertText = document.getElementById('volume-alert-text');
             const volumeTrend = document.getElementById('volume-trend');
-            
+
             if (volumeRatio > 2.0) {
                 if (volumeAlert) {
                     volumeAlert.className = 'alert alert-danger';
@@ -912,7 +912,7 @@ async function updateData() {
             }
         } catch (error) {
             console.error('Error al actualizar datos de volumen:', error);
-            
+
             // Mostrar valores por defecto en caso de error
             const volumeBar = document.getElementById('volume-ratio-bar');
             const volumeValueEl = document.getElementById('volume-ratio-value');
@@ -932,8 +932,8 @@ async function updateData() {
             if (volumeAlert) volumeAlert.style.display = 'none';
         }
 
-    // Actualizar contexto de mercado
-    if (data.market_context) {
+        // Actualizar contexto de mercado
+        if (data.market_context) {
             const market = data.market_context;
             const trend = market.trend || {};
             const sideways = market.sideways || {};
@@ -992,8 +992,8 @@ async function updateData() {
 
             if (marketDetails) {
                 const volatilityLevel = volatility.volatility_ratio > 2 ? 'Alta' : volatility.volatility_ratio > 1 ? 'Media' : 'Baja';
-                const volatilityClass = volatility.volatility_ratio > 2 ? 'alert-danger' : 
-                                     volatility.volatility_ratio > 1 ? 'alert-warning' : 'alert-success';
+                const volatilityClass = volatility.volatility_ratio > 2 ? 'alert-danger' :
+                    volatility.volatility_ratio > 1 ? 'alert-warning' : 'alert-success';
 
                 marketDetails.innerHTML = `
                     <div class="row g-2 small">
@@ -1315,6 +1315,71 @@ function updateSettings() {
     updateData();
 }
 
+// Función para actualizar el historial de trading
+function updateTradingHistory(trades) {
+    const historyContainer = document.getElementById('trading-history');
+    if (!historyContainer) return;
+
+    // Limpiar el contenedor
+    historyContainer.innerHTML = '';
+
+    // Si no hay trades, mostrar mensaje
+    if (!trades || trades.length === 0) {
+        historyContainer.innerHTML = `
+            <div class="list-group-item">
+                <div class="text-center text-muted">
+                    <i class="fas fa-info-circle me-2"></i>No hay operaciones recientes
+                </div>
+            </div>`;
+        return;
+    }
+
+    // Ordenar trades por fecha descendente
+    trades.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    // Agregar cada trade al historial
+    trades.forEach(trade => {
+        const isProfit = trade.profit > 0;
+        const item = document.createElement('div');
+        item.className = 'list-group-item';
+
+        item.innerHTML = `
+            <div class="trade-item">
+                <div class="trade-info">
+                    <div>
+                        <div class="trade-pair">${trade.symbol}</div>
+                        <div class="trade-time">${formatTime(trade.time)}</div>
+                    </div>
+                </div>
+                <div class="trade-result">
+                    <div class="${isProfit ? 'trade-profit' : 'trade-loss'}">
+                        ${isProfit ? '+' : ''}${trade.profit.toFixed(2)} USDT
+                    </div>
+                    <div class="trade-status ${trade.status.toLowerCase()}">
+                        ${trade.status}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">
+                <span class="me-3">Entrada: ${trade.entry_price.toFixed(2)}</span>
+                <span class="me-3">Salida: ${trade.exit_price ? trade.exit_price.toFixed(2) : 'Pendiente'}</span>
+                <span>Tamaño: ${trade.size.toFixed(4)}</span>
+            </div>`;
+
+        historyContainer.appendChild(item);
+    });
+
+    // Actualizar el balance de la cuenta
+    const totalProfit = trades.reduce((sum, trade) => sum + trade.profit, 0);
+    const initialBalance = 50.00; // Balance inicial de la cuenta demo
+    const currentBalance = (initialBalance + totalProfit).toFixed(2);
+
+    const balanceElement = document.getElementById('account-balance');
+    if (balanceElement) {
+        balanceElement.textContent = currentBalance;
+    }
+}
+
 // Cargar datos iniciales
 document.addEventListener('DOMContentLoaded', function () {
     // Inicializar valores por defecto inmediatamente
@@ -1322,6 +1387,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Luego cargar datos reales
     updateData();
+
+    // Simular algunos trades de ejemplo (esto deberá ser reemplazado con datos reales del backend)
+    const exampleTrades = [
+        {
+            symbol: 'BTC/USDT',
+            time: new Date(),
+            profit: 2.35,
+            status: 'CLOSED',
+            entry_price: 37250.50,
+            exit_price: 37325.75,
+            size: 0.001
+        },
+        {
+            symbol: 'ETH/USDT',
+            time: new Date(Date.now() - 3600000), // 1 hora atrás
+            profit: -1.20,
+            status: 'CLOSED',
+            entry_price: 2150.25,
+            exit_price: 2148.50,
+            size: 0.01
+        },
+        {
+            symbol: 'BTC/USDT',
+            time: new Date(Date.now() - 7200000), // 2 horas atrás
+            profit: 0,
+            status: 'OPEN',
+            entry_price: 37150.25,
+            exit_price: null,
+            size: 0.001
+        }
+    ];
+
+    updateTradingHistory(exampleTrades);
 
     // Actualizar datos cada 60 segundos
     setInterval(updateData, 60000);
