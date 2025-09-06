@@ -2,17 +2,9 @@ setuptools>=68.0.0
 wheel>=0.41.0
 numpy==1.26.4
 pandas==2.2.2
-scipy==1.11.4
-scikit-learn==1.4.2
-pandas-ta==0.3.14b0
 python-dotenv==1.0.1
-ccxt==4.3.92
 flask==3.0.2
 python-dateutil==2.9.0.post0
-plotly==5.22.0
-dash==2.17.1
-dash-bootstrap-components==1.6.0
 requests==2.32.3
-ta==0.11.0
 yfinance==0.2.40
 textblob==0.17.1

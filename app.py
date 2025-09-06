@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request
-import plotly.graph_objs as go
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
+# Removed heavy, unused imports to reduce deployment size
+# import plotly.graph_objs as go
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn.preprocessing import StandardScaler
 
 # Import new modules
 from config import *
