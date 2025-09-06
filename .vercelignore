@@ -1,0 +1,5 @@
+# Ignore files not needed for Vercel Python deployments (Sep 2025)
+build.sh
+vercel-build.sh
+vercel-build.js
+Procfile

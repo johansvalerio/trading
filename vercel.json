@@ -4,26 +4,10 @@
     {
       "src": "app.py",
       "use": "@vercel/python",
-      "config": {
-        "pythonVersion": "3.12"
-      }
-    },
-    {
-      "src": "vercel-build.js",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "."
-      }
-    },
-    {
-      "src": "static/**",
-      "use": "@vercel/static"
+      "config": { "pythonVersion": "3.12" }
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/app.py"
-    }
+    { "src": "/(.*)", "dest": "/app.py" }
   ]
 }
