@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional
 from config import API_BASE_URL, TIMEFRAME
+import yfinance as yf
 
 class ExchangeClient:
     def __init__(self, base_url: str = API_BASE_URL):
@@ -36,10 +37,14 @@ class ExchangeClient:
             url = f"{self.base_url}/klines"
             print(f"[DEBUG] Fetching data from {url} with params: {params}")
             
+            # Set a simple User-Agent to avoid being blocked by some CDNs
+            headers = {"User-Agent": "Mozilla/5.0 (compatible; TradingBot/1.0)"}
+
             response = self.session.get(
                 url,
                 params=params,
-                timeout=30
+                timeout=30,
+                headers=headers
             )
             
             print(f"[DEBUG] Response status: {response.status_code}")
@@ -75,14 +80,81 @@ class ExchangeClient:
                 
                 return df
             else:
-                print(f"Error fetching data: {response.status_code}")
-                return None
+                try:
+                    body = response.text[:500]
+                except Exception:
+                    body = "<no-body>"
+                print(f"Error fetching data from Binance. Status: {response.status_code}, Body: {body}")
+                # Fallback to yfinance if Binance fails
+                return self._fallback_historical_yf(symbol, timeframe, limit)
                 
         except requests.exceptions.RequestException as e:
-            print(f"Network error fetching historical data: {e}")
-            return None
+            print(f"Network error fetching historical data from Binance: {e}")
+            # Fallback to yfinance on network errors
+            return self._fallback_historical_yf(symbol, timeframe, limit)
         except Exception as e:
-            print(f"Error processing historical data: {e}")
+            print(f"Error processing historical data from Binance: {e}")
+            return self._fallback_historical_yf(symbol, timeframe, limit)
+
+    def _fallback_historical_yf(self, symbol: str, timeframe: str, limit: int) -> Optional[pd.DataFrame]:
+        """Fallback to yfinance when Binance API is unavailable."""
+        try:
+            # Map timeframe to yfinance intervals
+            yf_map = {
+                '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
+                '1h': '60m', '2h': '120m', '4h': '240m', '6h': '360m', '8h': '480m', '12h': '720m',
+                '1d': '1d', '3d': '3d', '1w': '1wk', '1M': '1mo'
+            }
+            interval = yf_map.get(timeframe, '60m')
+
+            # Convert crypto symbol to yfinance format, e.g., BTCUSDT -> BTC-USD
+            yf_symbol = symbol
+            if symbol.upper().endswith('USDT'):
+                base = symbol.upper().replace('USDT', '')
+                yf_symbol = f"{base}-USD"
+
+            print(f"[FALLBACK] Fetching yfinance data for {yf_symbol} interval={interval} limit={limit}")
+
+            # yfinance does not have a direct 'limit' parameter; we request a period covering at least 'limit' candles
+            period_map = {
+                '1m': '2d', '5m': '10d', '15m': '30d', '30m': '60d',
+                '60m': '200d', '120m': '400d', '240m': '800d', '360m': '1000d', '480m': '1200d', '720m': '1500d',
+                '1d': '2y', '3d': '5y', '1wk': '5y', '1mo': '10y'
+            }
+            period = period_map.get(interval, '200d')
+
+            df = yf.download(yf_symbol, interval=interval, period=period, progress=False)
+            if df is None or df.empty:
+                print("[FALLBACK] yfinance returned empty DataFrame")
+                return None
+
+            # Keep only the last 'limit' rows
+            df = df.tail(limit)
+
+            # Standardize columns to match expected format
+            df = df.rename(columns={
+                'Open': 'open', 'High': 'high', 'Low': 'low', 'Close': 'close', 'Volume': 'volume'
+            })
+
+            required = ['open', 'high', 'low', 'close', 'volume']
+            for col in required:
+                if col not in df.columns:
+                    print(f"[FALLBACK] Missing column in yfinance data: {col}")
+                    return None
+
+            # Ensure numeric types
+            for col in required:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            # Ensure index is datetime and sorted
+            if not isinstance(df.index, pd.DatetimeIndex):
+                df.index = pd.to_datetime(df.index)
+            df = df.sort_index()
+
+            print(f"[FALLBACK] yfinance provided {len(df)} candles")
+            return df
+        except Exception as e:
+            print(f"[FALLBACK] Error fetching yfinance data: {e}")
             return None
     
     def get_current_price(self, symbol: str) -> Optional[float]:
