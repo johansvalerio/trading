@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "builds": [],
-  "routes": [],
-  "buildCommand": null,
-  "outputDirectory": null,
-  "framework": null,
-  "ignoreCommand": "echo 'Skipping Vercel build for Railway deployment'"
-}

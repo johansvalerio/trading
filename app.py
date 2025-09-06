@@ -45,6 +45,11 @@ def index():
     """Main dashboard"""
     return render_template('index.html')
 
+@app.route('/health')
+def health():
+    """Lightweight health check endpoint"""
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/api/data')
 def get_data():
     """Get trading data and analysis"""

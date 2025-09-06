@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "gunicorn -w 4 -b :$PORT app:app"
+startCommand = "gunicorn app:app --workers 2 --threads 2 --preload --bind 0.0.0.0:$PORT --timeout 120 --keep-alive 5 --access-logfile - --error-logfile -"
 
 [build.environment]
 PYTHON_VERSION = "3.12"
@@ -10,4 +10,3 @@ PYTHON_VERSION = "3.12"
 [build.nixpacks]
 provider = "python"
 installCommand = "pip install -r requirements.txt"
-startCommand = "gunicorn -w 4 -b :$PORT app:app"
