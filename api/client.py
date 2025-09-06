@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import requests
 import time
@@ -14,6 +15,13 @@ class ExchangeClient:
     def get_historical_data(self, symbol: str, timeframe: str = TIMEFRAME, 
                           limit: int = 200) -> Optional[pd.DataFrame]:
         """Fetch historical candle data from exchange"""
+        # Allow forcing a provider via environment, e.g. USE_PROVIDER=yfinance/coingecko/binance
+        provider = os.getenv("USE_PROVIDER", "auto").lower()
+        if provider == "yfinance":
+            return self._fallback_historical_yf(symbol, timeframe, limit)
+        if provider == "coingecko":
+            return self._fallback_historical_coingecko(symbol, timeframe, limit)
+        # Default flow: try Binance -> yfinance -> CoinGecko
         try:
             # Map timeframe to Binance format
             timeframe_map = {
@@ -86,15 +94,25 @@ class ExchangeClient:
                     body = "<no-body>"
                 print(f"Error fetching data from Binance. Status: {response.status_code}, Body: {body}")
                 # Fallback to yfinance if Binance fails
-                return self._fallback_historical_yf(symbol, timeframe, limit)
+                df = self._fallback_historical_yf(symbol, timeframe, limit)
+                if df is not None and not df.empty:
+                    return df
+                # If yfinance also fails, try CoinGecko
+                return self._fallback_historical_coingecko(symbol, timeframe, limit)
                 
         except requests.exceptions.RequestException as e:
             print(f"Network error fetching historical data from Binance: {e}")
             # Fallback to yfinance on network errors
-            return self._fallback_historical_yf(symbol, timeframe, limit)
+            df = self._fallback_historical_yf(symbol, timeframe, limit)
+            if df is not None and not df.empty:
+                return df
+            return self._fallback_historical_coingecko(symbol, timeframe, limit)
         except Exception as e:
             print(f"Error processing historical data from Binance: {e}")
-            return self._fallback_historical_yf(symbol, timeframe, limit)
+            df = self._fallback_historical_yf(symbol, timeframe, limit)
+            if df is not None and not df.empty:
+                return df
+            return self._fallback_historical_coingecko(symbol, timeframe, limit)
 
     def _fallback_historical_yf(self, symbol: str, timeframe: str, limit: int) -> Optional[pd.DataFrame]:
         """Fallback to yfinance when Binance API is unavailable."""
@@ -139,8 +157,12 @@ class ExchangeClient:
             required = ['open', 'high', 'low', 'close', 'volume']
             for col in required:
                 if col not in df.columns:
-                    print(f"[FALLBACK] Missing column in yfinance data: {col}")
-                    return None
+                    print(f"[FALLBACK] Missing column in yfinance data: {col}, filling default")
+                    # Ensure volume exists to avoid downstream division by zero
+                    if col == 'volume':
+                        df['volume'] = 1.0
+                    else:
+                        return None
 
             # Ensure numeric types
             for col in required:
@@ -155,6 +177,74 @@ class ExchangeClient:
             return df
         except Exception as e:
             print(f"[FALLBACK] Error fetching yfinance data: {e}")
+            return None
+
+    def _fallback_historical_coingecko(self, symbol: str, timeframe: str, limit: int) -> Optional[pd.DataFrame]:
+        """Fallback to CoinGecko OHLC endpoint. Note: volume not provided; we set a default."""
+        try:
+            # Map symbol to CoinGecko coin id (support BTCUSDT -> bitcoin)
+            coin_map = {
+                'BTC': 'bitcoin',
+                'ETH': 'ethereum'
+            }
+            cg_id = None
+            sym = symbol.upper()
+            if sym.endswith('USDT'):
+                base = sym[:-4]
+                cg_id = coin_map.get(base, 'bitcoin')
+            else:
+                cg_id = coin_map.get(sym, 'bitcoin')
+
+            # CoinGecko granularity is driven by 'days' and returns up to 300 candles depending on range.
+            # Choose days so we get at least 'limit' candles for the timeframe.
+            if timeframe in ['1h', '2h', '4h', '6h', '8h', '12h']:
+                days = 14  # enough to cover ~200 hours
+            elif timeframe in ['1d', '3d']:
+                days = 365
+            else:
+                days = 30
+
+            url = f"https://api.coingecko.com/api/v3/coins/{cg_id}/ohlc"
+            vs_currency = 'usd'
+            interval_map = {
+                '1h': '1h', '2h': '1h', '4h': '4h', '6h': '4h', '8h': '4h', '12h': '4h',
+                '1d': '1d', '3d': '1d'
+            }
+            # CoinGecko supports only 1, 4, and 24-hour data effectively via OHLC endpoint.
+            cg_interval = interval_map.get(timeframe, '1h')
+
+            params = { 'vs_currency': vs_currency, 'days': days }
+            print(f"[FALLBACK-CG] Fetching CoinGecko OHLC for {cg_id} days={days}")
+            r = requests.get(url, params=params, timeout=20)
+            if r.status_code != 200:
+                print(f"[FALLBACK-CG] CoinGecko error {r.status_code}: {r.text[:200]}")
+                return None
+            data = r.json()
+            if not isinstance(data, list) or len(data) == 0:
+                print("[FALLBACK-CG] Empty OHLC data")
+                return None
+            # Data rows: [timestamp, open, high, low, close]
+            rows = []
+            for row in data[-limit:]:
+                try:
+                    ts_ms, o, h, l, c = row
+                    rows.append({
+                        'open_time': pd.to_datetime(int(ts_ms), unit='ms'),
+                        'open': float(o), 'high': float(h), 'low': float(l), 'close': float(c),
+                        'volume': 1.0  # default volume
+                    })
+                except Exception:
+                    continue
+            if not rows:
+                print("[FALLBACK-CG] No parsable rows")
+                return None
+            df = pd.DataFrame(rows)
+            df.set_index('open_time', inplace=True)
+            df = df.sort_index()
+            print(f"[FALLBACK-CG] Provided {len(df)} candles")
+            return df
+        except Exception as e:
+            print(f"[FALLBACK-CG] Exception: {e}")
             return None
     
     def get_current_price(self, symbol: str) -> Optional[float]:
