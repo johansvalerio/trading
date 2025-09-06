@@ -20,11 +20,20 @@ from services.news_analyzer import NewsAnalyzer
 
 app = Flask(__name__)
 
+# Configure logging
+import logging
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
+
 # Initialize services
 news_analyzer = NewsAnalyzer()
 trading_service = TradingService()
 exchange_client = ExchangeClient()
 market_analyzer = MarketAnalyzer()
+
+# Log environment info
+app.logger.info(f"Starting app with SYMBOL={SYMBOL}, TIMEFRAME={TIMEFRAME}")
+app.logger.info(f"API_BASE_URL={API_BASE_URL}")
 
 # Global variables
 daily_trades = 0
@@ -40,10 +49,18 @@ def index():
 def get_data():
     """Get trading data and analysis"""
     try:
-        # Fetch historical data
+        app.logger.info('Fetching historical data...')
         df = get_historical_data(SYMBOL, TIMEFRAME, 200)
-        if df is None or df.empty:
-            return jsonify({'error': 'No data available'}), 500
+        
+        if df is None:
+            app.logger.error('get_historical_data() returned None')
+            return jsonify({'error': 'Failed to fetch data from exchange'}), 500
+            
+        if df.empty:
+            app.logger.error('Received empty DataFrame from get_historical_data()')
+            return jsonify({'error': 'No data available from exchange'}), 500
+            
+        app.logger.info(f'Successfully fetched {len(df)} rows of data')
         
         # Add technical indicators
         df = add_technical_indicators(df)
@@ -543,4 +560,5 @@ def reset_trading():
     return jsonify({'success': True, 'message': 'Trading reset successfully'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)

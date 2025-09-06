@@ -1,13 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "app.py",
-      "use": "@vercel/python",
-      "config": { "pythonVersion": "3.12" }
-    }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/app.py" }
-  ]
+  "builds": [],
+  "routes": [],
+  "buildCommand": null,
+  "outputDirectory": null,
+  "framework": null,
+  "ignoreCommand": "echo 'Skipping Vercel build for Railway deployment'"
 }

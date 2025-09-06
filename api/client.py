@@ -21,6 +21,10 @@ class ExchangeClient:
                 '1d': '1d', '3d': '3d', '1w': '1w', '1M': '1M'
             }
             
+            if timeframe not in timeframe_map:
+                print(f"[ERROR] Unsupported timeframe: {timeframe}")
+                return None
+            
             binance_timeframe = timeframe_map.get(timeframe, '1h')
             
             params = {
@@ -29,14 +33,24 @@ class ExchangeClient:
                 'limit': limit
             }
             
+            url = f"{self.base_url}/klines"
+            print(f"[DEBUG] Fetching data from {url} with params: {params}")
+            
             response = self.session.get(
-                f"{self.base_url}/klines",
+                url,
                 params=params,
                 timeout=30
             )
             
+            print(f"[DEBUG] Response status: {response.status_code}")
+            
             if response.status_code == 200:
                 data = response.json()
+                print(f"[DEBUG] Received {len(data)} candles")
+                
+                if not data:
+                    print("[ERROR] Empty response data from exchange")
+                    return None
                 
                 # Convert to DataFrame
                 df = pd.DataFrame(data, columns=[
