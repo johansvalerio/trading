@@ -42,64 +42,72 @@ class ExchangeClient:
                 'limit': limit
             }
             
-            url = f"{self.base_url}/klines"
-            print(f"[DEBUG] Fetching data from {url} with params: {params}")
-            
+            # Try multiple Binance hosts to avoid geo blocks
+            default_hosts = [
+                "https://data-api.binance.vision/api/v3",  # public mirrored data host
+                "https://api.binance.com/api/v3"
+            ]
+            # Allow override via env (comma-separated)
+            env_hosts = os.getenv("BINANCE_BASE_URLS")
+            hosts = [h.strip() for h in env_hosts.split(",") if h.strip()] if env_hosts else default_hosts
+
             # Set a simple User-Agent to avoid being blocked by some CDNs
             headers = {"User-Agent": "Mozilla/5.0 (compatible; TradingBot/1.0)"}
 
-            response = self.session.get(
-                url,
-                params=params,
-                timeout=30,
-                headers=headers
-            )
-            
-            print(f"[DEBUG] Response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                data = response.json()
-                print(f"[DEBUG] Received {len(data)} candles")
-                
-                if not data:
-                    print("[ERROR] Empty response data from exchange")
-                    return None
-                
-                # Convert to DataFrame
-                df = pd.DataFrame(data, columns=[
-                    'open_time', 'open', 'high', 'low', 'close', 'volume',
-                    'close_time', 'quote_volume', 'trades', 'taker_buy_base',
-                    'taker_buy_quote', 'ignore'
-                ])
-                
-                # Convert types
-                df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
-                df['close_time'] = pd.to_datetime(df['close_time'], unit='ms')
-                
-                numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'quote_volume']
-                for col in numeric_columns:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                
-                # Set timestamp as index
-                df.set_index('open_time', inplace=True)
-                
-                # Sort by timestamp
-                df = df.sort_index()
-                
-                return df
-            else:
+            last_error = None
+            for host in hosts:
+                url = f"{host}/klines"
+                print(f"[DEBUG] Fetching data from {url} with params: {params}")
                 try:
-                    body = response.text[:500]
-                except Exception:
-                    body = "<no-body>"
-                print(f"Error fetching data from Binance. Status: {response.status_code}, Body: {body}")
-                # Fallback to yfinance if Binance fails
-                df = self._fallback_historical_yf(symbol, timeframe, limit)
-                if df is not None and not df.empty:
-                    return df
-                # If yfinance also fails, try CoinGecko
-                return self._fallback_historical_coingecko(symbol, timeframe, limit)
-                
+                    response = self.session.get(
+                        url,
+                        params=params,
+                        timeout=30,
+                        headers=headers
+                    )
+                    print(f"[DEBUG] Response status: {response.status_code} for host {host}")
+                    if response.status_code == 200:
+                        data = response.json()
+                        print(f"[DEBUG] Received {len(data)} candles from {host}")
+                        if not data:
+                            last_error = "Empty response"
+                            continue
+                        df = pd.DataFrame(data, columns=[
+                            'open_time', 'open', 'high', 'low', 'close', 'volume',
+                            'close_time', 'quote_volume', 'trades', 'taker_buy_base',
+                            'taker_buy_quote', 'ignore'
+                        ])
+                        df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
+                        df['close_time'] = pd.to_datetime(df['close_time'], unit='ms')
+                        numeric_columns = ['open', 'high', 'low', 'close', 'volume', 'quote_volume']
+                        for col in numeric_columns:
+                            df[col] = pd.to_numeric(df[col], errors='coerce')
+                        df.set_index('open_time', inplace=True)
+                        df = df.sort_index()
+                        self.last_provider = "binance"
+                        return df
+                    else:
+                        try:
+                            body = response.text[:200]
+                        except Exception:
+                            body = "<no-body>"
+                        last_error = f"Status {response.status_code} Body {body}"
+                        print(f"[DEBUG] Binance host {host} failed: {last_error}")
+                except Exception as e:
+                    last_error = str(e)
+                    print(f"[DEBUG] Exception calling {host}: {e}")
+
+            print(f"[WARN] All Binance hosts failed. Last error: {last_error}")
+            # Fallback to yfinance if all Binance hosts fail
+            df = self._fallback_historical_yf(symbol, timeframe, limit)
+            if df is not None and not df.empty:
+                self.last_provider = "yfinance"
+                return df
+            # If yfinance also fails, try CoinGecko
+            df = self._fallback_historical_coingecko(symbol, timeframe, limit)
+            if df is not None and not df.empty:
+                self.last_provider = "coingecko"
+            return df
         except requests.exceptions.RequestException as e:
             print(f"Network error fetching historical data from Binance: {e}")
             # Fallback to yfinance on network errors
